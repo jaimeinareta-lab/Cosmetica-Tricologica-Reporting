@@ -433,7 +433,7 @@
     bodyCA.innerHTML=campanas.length?campanas.map(c=>{
       const roas=c.coste_total>0?c.ventas/c.coste_total:0;const acos=c.ventas>0?(c.coste_total/c.ventas)*100:0;
       const tipo=(c.campana_id||'').substring(0,2);
-      return `<tr><td style="font-size:12px;">${(c.campana_id||'—').substring(0,45)}</td>
+      return `<tr><td style="font-size:12px;">${(c.campana_nombre||c.campana_id||'—').substring(0,45)}</td>
         <td><span class="badge badge-neu">${tipo}</span></td>
         <td class="td-num">${fmtEur(c.coste_total)}</td><td class="td-num">${fmtEur(c.ventas)}</td>
         <td class="td-num"><span class="badge ${roas>=3?'badge-pos':roas>=2?'badge-neu':'badge-neg'}">${fmt(roas,2)}x</span></td>
