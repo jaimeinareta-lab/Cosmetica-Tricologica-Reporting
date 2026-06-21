@@ -5,653 +5,447 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reporting — Grow Studio</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    /* ── TOKENS ── */
     :root {
-      --bg: #F0F0EE;
-      --surface: #FFFFFF;
-      --ink: #0A0A0A;
-      --ink-mid: #555555;
-      --ink-light: #999999;
-      --accent: #0A0A0A;
-      --accent-light: #E8E8E6;
-      --positive: #1A7A4A;
-      --negative: #C0392B;
-      --neutral: #555555;
-      --border: #E0E0DE;
-      --radius: 2px;
+      --bg: #0D0D0F;
+      --surface: #16161A;
+      --surface2: #1E1E24;
+      --border: #2A2A32;
+      --ink: #F2F2F0;
+      --ink-mid: #9999A8;
+      --ink-light: #55556A;
+      --accent: #FF3B5C;
+      --accent2: #4B6EFF;
+      --positive: #2ECC7A;
+      --negative: #FF3B5C;
+      --neutral: #9999A8;
       --font: 'Inter', system-ui, sans-serif;
+      --radius: 8px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--ink);
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── HEADER ── */
     .header {
-      background: var(--ink);
-      padding: 20px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 0 40px; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; border-bottom: 1px solid var(--border);
+      background: var(--surface); position: sticky; top: 0; z-index: 100;
     }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .logo { font-size: 14px; font-weight: 900; color: var(--accent); letter-spacing: -0.01em; text-transform: uppercase; }
+    .logo span { font-weight: 300; color: var(--ink); letter-spacing: 0.08em; }
+    .divider { width: 1px; height: 20px; background: var(--border); }
+    .client-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .period-badge { background: var(--accent); color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; }
+    .view-toggle { display: flex; gap: 2px; background: var(--bg); padding: 3px; border-radius: 6px; }
+    .view-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; border: none; background: transparent; cursor: pointer; color: var(--ink-mid); border-radius: 4px; transition: all 0.15s; font-family: var(--font); }
+    .view-btn.active { background: var(--surface2); color: var(--ink); }
 
-    .logo {
-      font-size: 15px;
-      font-weight: 900;
-      color: #FFFFFF;
-      letter-spacing: -0.02em;
-      text-transform: uppercase;
-    }
-    .logo span {
-      font-weight: 300;
-      letter-spacing: 0.08em;
-    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 40px 40px 80px; }
 
-    .header-meta {
-      text-align: right;
-    }
-    .header-meta .client-name {
-      font-size: 13px;
-      color: rgba(255,255,255,0.5);
-      font-weight: 400;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-    .header-meta .report-period {
-      font-size: 13px;
-      color: rgba(255,255,255,0.9);
-      font-weight: 500;
-      margin-top: 2px;
-    }
-
-    /* ── VIEW TOGGLE ── */
-    .view-toggle {
-      display: flex;
-      gap: 0;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: var(--surface);
-    }
-    .view-btn {
-      padding: 8px 20px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      color: var(--ink-light);
-      transition: all 0.15s;
-    }
-    .view-btn.active {
-      background: var(--ink);
-      color: #FFFFFF;
-    }
-
-    /* ── LAYOUT ── */
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 48px 48px 80px;
-    }
-
-    /* ── LOADING ── */
-    .loading-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 400px;
-      gap: 16px;
-    }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--border);
-      border-top-color: var(--ink);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; }
+    .spinner { width: 36px; height: 36px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-state p {
-      font-size: 13px;
-      color: var(--ink-light);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
+    .loading-state p { font-size: 12px; color: var(--ink-light); letter-spacing: 0.08em; text-transform: uppercase; }
 
-    /* ── ERROR ── */
-    .error-state {
-      display: none;
-      padding: 32px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      text-align: center;
-      color: var(--negative);
-      font-size: 14px;
-    }
+    .section { margin-bottom: 40px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-light); white-space: nowrap; }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
 
-    /* ── SECTION LABEL ── */
-    .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    /* ── KPI GRID ── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2px;
-      margin-bottom: 2px;
-    }
-
-    .kpi-card {
-      background: var(--surface);
-      padding: 28px 24px;
-    }
-
-    .kpi-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      margin-bottom: 12px;
-    }
-
-    .kpi-value {
-      font-size: 32px;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      line-height: 1;
-    }
-
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 20px; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); opacity: 0.4; }
+    .kpi-card.positive::before { background: var(--positive); opacity: 0.6; }
+    .kpi-card.negative::before { background: var(--negative); opacity: 0.6; }
+    .kpi-card.blue::before { background: var(--accent2); opacity: 0.6; }
+    .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 10px; }
+    .kpi-value { font-size: 28px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
     .kpi-value.positive { color: var(--positive); }
     .kpi-value.negative { color: var(--negative); }
+    .kpi-sub { font-size: 12px; color: var(--ink-light); margin-top: 6px; }
 
-    .kpi-sub {
-      font-size: 12px;
-      color: var(--ink-light);
-      margin-top: 6px;
-      font-weight: 400;
-    }
+    .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .chart-grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+    .chart-sub { font-size: 12px; color: var(--ink-light); margin-bottom: 20px; }
+    .chart-wrap { position: relative; }
 
-    /* ── SECTION BLOCK ── */
-    .section-block {
-      margin-top: 40px;
-    }
-
-    /* ── TABLE ── */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--surface);
-    }
-
-    .data-table th {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--ink-light);
-      padding: 14px 20px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-
-    .data-table td {
-      padding: 14px 20px;
-      font-size: 13px;
-      color: var(--ink);
-      border-bottom: 1px solid var(--accent-light);
-      font-weight: 400;
-    }
-
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-light); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 12px 14px; font-size: 13px; color: var(--ink); border-bottom: 1px solid var(--border); }
     .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface2); }
+    .td-num { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .td-mono { font-family: monospace; font-size: 12px; color: var(--ink-mid); }
 
-    .data-table tr:hover td { background: var(--bg); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .badge-pos { background: rgba(46,204,122,0.15); color: var(--positive); }
+    .badge-neg { background: rgba(255,59,92,0.15); color: var(--negative); }
+    .badge-neu { background: var(--surface2); color: var(--ink-mid); }
 
-    .td-num {
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-    }
+    .donut-stats { display: flex; flex-direction: column; gap: 16px; justify-content: center; padding-left: 8px; }
+    .donut-stat-label { font-size: 12px; color: var(--ink-mid); margin-bottom: 2px; }
+    .donut-stat-value { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+    .donut-stat-sub { font-size: 12px; color: var(--ink-light); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 2px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-    .badge-positive { background: #E8F5EE; color: var(--positive); }
-    .badge-negative { background: #FDECEA; color: var(--negative); }
-    .badge-neutral  { background: var(--accent-light); color: var(--neutral); }
-
-    /* ── INTERNAL ONLY ── */
     .internal-only { display: none; }
     body.view-interno .internal-only { display: block; }
 
-    /* ── FOOTER ── */
-    .footer {
-      margin-top: 64px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .footer-logo {
-      font-size: 13px;
-      font-weight: 900;
-      color: var(--ink);
-      letter-spacing: -0.01em;
-      text-transform: uppercase;
-    }
-    .footer-logo span { font-weight: 300; letter-spacing: 0.08em; }
-    .footer p {
-      font-size: 12px;
-      color: var(--ink-light);
-    }
+    .no-data { padding: 32px; text-align: center; font-size: 13px; color: var(--ink-light); }
 
-    /* ── NO DATA ── */
-    .no-data {
-      padding: 40px 24px;
-      text-align: center;
-      font-size: 13px;
-      color: var(--ink-light);
-      background: var(--surface);
-    }
+    .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .footer-logo { font-size: 13px; font-weight: 900; color: var(--accent); text-transform: uppercase; }
+    .footer-logo span { font-weight: 300; color: var(--ink-mid); letter-spacing: 0.08em; }
+    .footer p { font-size: 12px; color: var(--ink-light); }
 
-    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      .header { padding: 16px 20px; }
-      .container { padding: 24px 20px 60px; }
+      .header { padding: 0 16px; }
+      .container { padding: 20px 16px 60px; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .kpi-value { font-size: 24px; }
+      .chart-grid-2, .chart-grid-3 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header class="header">
+<header class="header">
+  <div class="header-left">
     <div class="logo">GROW<span>STUDIO</span>®</div>
-    <div style="display:flex; align-items:center; gap:24px;">
-      <div class="header-meta">
-        <div class="client-name" id="headerClientName">—</div>
-        <div class="report-period" id="headerPeriod">—</div>
-      </div>
-      <div class="view-toggle">
-        <button class="view-btn active" onclick="setView('cliente')">Cliente</button>
-        <button class="view-btn" onclick="setView('interno')">Interno</button>
-      </div>
+    <div class="divider"></div>
+    <div class="client-name" id="headerClientName">—</div>
+    <div class="period-badge" id="headerPeriod">—</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="setView('cliente')">Cliente</button>
+      <button class="view-btn" onclick="setView('interno')">Interno</button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <!-- MAIN -->
-  <main class="container">
+<main class="container">
+  <div class="loading-state" id="loadingState">
+    <div class="spinner"></div>
+    <p>Cargando datos</p>
+  </div>
 
-    <!-- Loading -->
-    <div class="loading-state" id="loadingState">
-      <div class="spinner"></div>
-      <p>Cargando datos</p>
-    </div>
+  <div id="content" style="display:none;">
 
-    <!-- Error -->
-    <div class="error-state" id="errorState">
-      No se han podido cargar los datos. Comprueba la conexión e inténtalo de nuevo.
-    </div>
-
-    <!-- Content -->
-    <div id="content" style="display:none;">
-
-      <!-- KPIs principales -->
-      <div class="section-label">Rendimiento global</div>
+    <div class="section">
+      <div class="section-header"><div class="section-title">Rendimiento global</div><div class="section-line"></div></div>
       <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card positive">
           <div class="kpi-label">Ventas totales</div>
           <div class="kpi-value" id="kpiVentas">—</div>
           <div class="kpi-sub">orgánicas + PPC</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card blue">
           <div class="kpi-label">Unidades vendidas</div>
           <div class="kpi-value" id="kpiUnidades">—</div>
-          <div class="kpi-sub">orgánicas + PPC</div>
+          <div class="kpi-sub" id="kpiUniSub">—</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" id="kpiNetCard">
           <div class="kpi-label">Beneficio neto</div>
           <div class="kpi-value" id="kpiNetProfit">—</div>
-          <div class="kpi-sub" id="kpiMargin">—</div>
+          <div class="kpi-sub" id="kpiMargen">—</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" id="kpiTacosCard">
           <div class="kpi-label">TACoS</div>
           <div class="kpi-value" id="kpiTacos">—</div>
           <div class="kpi-sub">gasto ads / ventas totales</div>
         </div>
       </div>
+    </div>
 
-      <!-- Top productos -->
-      <div class="section-block">
-        <div class="section-label">Top productos</div>
-        <table class="data-table" id="tablaProductos">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Producto</th>
-              <th>ASIN</th>
-              <th style="text-align:right;">Ventas</th>
-              <th style="text-align:right;">Unidades</th>
-              <th style="text-align:right;">Beneficio neto</th>
-            </tr>
-          </thead>
-          <tbody id="bodyProductos">
-            <tr><td colspan="6" class="no-data">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Carteras -->
-      <div class="section-block">
-        <div class="section-label">Rendimiento por cartera</div>
-        <table class="data-table" id="tablaCarteras">
-          <thead>
-            <tr>
-              <th>Cartera</th>
-              <th style="text-align:right;">Inversión</th>
-              <th style="text-align:right;">Ventas PPC</th>
-              <th style="text-align:right;">ROAS</th>
-              <th style="text-align:right;">ACoS</th>
-            </tr>
-          </thead>
-          <tbody id="bodyCarteras">
-            <tr><td colspan="5" class="no-data">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- INTERNO: Campañas -->
-      <div class="section-block internal-only">
-        <div class="section-label">Campañas — Vista interna</div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Campaña</th>
-              <th>Tipo</th>
-              <th style="text-align:right;">Inversión</th>
-              <th style="text-align:right;">Ventas</th>
-              <th style="text-align:right;">ROAS</th>
-              <th style="text-align:right;">ACoS</th>
-              <th style="text-align:right;">Impresiones</th>
-              <th style="text-align:right;">Clics</th>
-            </tr>
-          </thead>
-          <tbody id="bodyCampanas">
-            <tr><td colspan="8" class="no-data">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- INTERNO: KPIs adicionales -->
-      <div class="section-block internal-only">
-        <div class="section-label">KPIs adicionales — Vista interna</div>
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">Inversión publicitaria</div>
-            <div class="kpi-value" id="kpiInversion">—</div>
-            <div class="kpi-sub">total ads spend</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Ventas PPC</div>
-            <div class="kpi-value" id="kpiVentasPPC">—</div>
-            <div class="kpi-sub">atribuidas a ads</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">ROAS global</div>
-            <div class="kpi-value" id="kpiRoas">—</div>
-            <div class="kpi-sub">ventas PPC / inversión</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Campañas activas</div>
-            <div class="kpi-value" id="kpiCampanas">—</div>
-            <div class="kpi-sub">SP + SB + SD</div>
+    <div class="section">
+      <div class="section-header"><div class="section-title">Distribución de ventas</div><div class="section-line"></div></div>
+      <div class="chart-grid-3">
+        <div class="chart-card">
+          <div class="chart-title">Top productos por ventas</div>
+          <div class="chart-sub">Ranking por ingresos totales del mes</div>
+          <div class="chart-wrap" style="height:280px;"><canvas id="chartProductos"></canvas></div>
+        </div>
+        <div class="chart-card" style="display:flex;flex-direction:column;">
+          <div class="chart-title">Orgánico vs PPC</div>
+          <div class="chart-sub">% sobre ventas totales</div>
+          <div style="display:flex;align-items:center;gap:24px;flex:1;">
+            <div class="chart-wrap" style="width:150px;height:150px;flex-shrink:0;"><canvas id="chartDonut"></canvas></div>
+            <div class="donut-stats">
+              <div>
+                <div class="donut-stat-label"><span class="dot" style="background:var(--positive);"></span>Orgánicas</div>
+                <div class="donut-stat-value positive" id="donutOrg">—</div>
+                <div class="donut-stat-sub" id="donutOrgEur">—</div>
+              </div>
+              <div>
+                <div class="donut-stat-label"><span class="dot" style="background:var(--accent);"></span>PPC</div>
+                <div class="donut-stat-value" style="color:var(--accent);" id="donutPpc">—</div>
+                <div class="donut-stat-sub" id="donutPpcEur">—</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-    </div><!-- /content -->
+    <div class="section">
+      <div class="section-header"><div class="section-title">Rendimiento por cartera</div><div class="section-line"></div></div>
+      <div class="chart-grid-2">
+        <div class="chart-card">
+          <div class="chart-title">ROAS por cartera</div>
+          <div class="chart-sub">Retorno sobre inversión publicitaria</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chartRoasCarteras"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Inversión vs Ventas PPC</div>
+          <div class="chart-sub">Comparativa por cartera</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chartInvVentas"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-top:12px;">
+        <table class="data-table">
+          <thead><tr><th>Cartera</th><th style="text-align:right;">Inversión</th><th style="text-align:right;">Ventas PPC</th><th style="text-align:right;">ROAS</th><th style="text-align:right;">ACoS</th></tr></thead>
+          <tbody id="bodyCarteras"><tr><td colspan="5" class="no-data">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
 
-    <!-- Footer -->
+    <div class="section">
+      <div class="section-header"><div class="section-title">Top productos</div><div class="section-line"></div></div>
+      <div class="chart-card">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Producto</th><th>ASIN</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">Beneficio neto</th></tr></thead>
+          <tbody id="bodyProductos"><tr><td colspan="6" class="no-data">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section internal-only">
+      <div class="section-header"><div class="section-title">Publicidad — Vista interna</div><div class="section-line"></div></div>
+      <div class="kpi-grid">
+        <div class="kpi-card blue"><div class="kpi-label">Inversión publicitaria</div><div class="kpi-value" id="kpiInversion">—</div><div class="kpi-sub">total ads spend</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Ventas PPC</div><div class="kpi-value" id="kpiVentasPPC">—</div><div class="kpi-sub">atribuidas a ads</div></div>
+        <div class="kpi-card positive"><div class="kpi-label">ROAS global</div><div class="kpi-value positive" id="kpiRoas">—</div><div class="kpi-sub">ventas PPC / inversión</div></div>
+        <div class="kpi-card"><div class="kpi-label">Campañas activas</div><div class="kpi-value" id="kpiCampanas">—</div><div class="kpi-sub">SP + SB + SD</div></div>
+      </div>
+    </div>
+
+    <div class="section internal-only">
+      <div class="section-header"><div class="section-title">Campañas — Vista interna</div><div class="section-line"></div></div>
+      <div class="chart-card" style="margin-bottom:12px;">
+        <div class="chart-title">Top campañas por inversión</div>
+        <div class="chart-sub">Las 10 campañas con mayor gasto publicitario</div>
+        <div class="chart-wrap" style="height:300px;"><canvas id="chartCampanas"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <table class="data-table">
+          <thead><tr><th>Campaña</th><th>Tipo</th><th style="text-align:right;">Inversión</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">ROAS</th><th style="text-align:right;">ACoS</th><th style="text-align:right;">Clics</th></tr></thead>
+          <tbody id="bodyCampanas"><tr><td colspan="7" class="no-data">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <footer class="footer">
       <div class="footer-logo">GROW<span>STUDIO</span>®</div>
       <p>growstudio.es · info@growstudio.es</p>
     </footer>
+  </div>
+</main>
 
-  </main>
+<script>
+  const CONFIG = {
+    clienteId: 1,
+    clienteNombre: 'Cosmética Tricológica',
+    supabaseUrl: 'https://wxqqmflqwnohsxpbonpw.supabase.co',
+    supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXFtZmxxd25vaHN4cGJvbnB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTM1ODgsImV4cCI6MjA5NzQ2OTU4OH0.WC4EXYyWPBllWGSXUKGtL7nBMUg9Qi-zHqYDJbfmx6U',
+  };
 
-  <script>
-    // ── CONFIG — editar por repositorio ──────────────────────────────
-    const CONFIG = {
-      clienteId: 13,                          // supabaseId del cliente
-      clienteNombre: 'Cosmética Tricológica', // nombre visible
-      supabaseUrl: 'https://wxqqmflqwnohsxpbonpw.supabase.co',
-      supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXFtZmxxd25vaHN4cGJvbnB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTM1ODgsImV4cCI6MjA5NzQ2OTU4OH0.WC4EXYyWPBllWGSXUKGtL7nBMUg9Qi-zHqYDJbfmx6U',
-    };
-    // ─────────────────────────────────────────────────────────────────
+  const fmt = (n,d=0) => new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);
+  const fmtEur = n => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+  const fmtMes = k => { const [y,m]=k.split('-'); const s=new Date(y,m-1).toLocaleString('es-ES',{month:'long',year:'numeric'}); return s.charAt(0).toUpperCase()+s.slice(1); };
 
-    // ── UTILS ────────────────────────────────────────────────────────
-    const fmt = (n, decimals = 0) =>
-      new Intl.NumberFormat('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n || 0);
+  function setView(v) {
+    document.body.className = v==='interno'?'view-interno':'';
+    document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===v));
+  }
 
-    const fmtEur = (n) =>
-      new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
+  async function sbFetch(table,params) {
+    const url=new URL(`${CONFIG.supabaseUrl}/rest/v1/${table}`);
+    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+    const res=await fetch(url,{headers:{'apikey':CONFIG.supabaseKey,'Authorization':`Bearer ${CONFIG.supabaseKey}`}});
+    if(!res.ok) throw new Error(`Error ${res.status}`);
+    return res.json();
+  }
 
-    const fmtMes = (key) => {
-      const [y, m] = key.split('-');
-      return new Date(y, m - 1).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-    };
-
-    const roasBadge = (roas) => {
-      const cls = roas >= 3 ? 'badge-positive' : roas >= 2 ? 'badge-neutral' : 'badge-negative';
-      return `<span class="badge ${cls}">${fmt(roas, 2)}x</span>`;
-    };
-
-    const acosBadge = (acos) => {
-      const cls = acos <= 20 ? 'badge-positive' : acos <= 35 ? 'badge-neutral' : 'badge-negative';
-      return `<span class="badge ${cls}">${fmt(acos, 1)}%</span>`;
-    };
-
-    // ── VIEW TOGGLE ──────────────────────────────────────────────────
-    function setView(v) {
-      document.body.className = v === 'interno' ? 'view-interno' : '';
-      document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === v));
-    }
-
-    // ── SUPABASE FETCH ───────────────────────────────────────────────
-    async function sbFetch(table, params) {
-      const url = new URL(`${CONFIG.supabaseUrl}/rest/v1/${table}`);
-      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-      const res = await fetch(url, {
-        headers: {
-          'apikey': CONFIG.supabaseKey,
-          'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+  function makeChart(id,type,labels,datasets,opts={}) {
+    const ctx=document.getElementById(id);
+    if(!ctx) return;
+    const isHoriz = opts.indexAxis==='y';
+    return new Chart(ctx,{
+      type,
+      data:{labels,datasets},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        indexAxis: opts.indexAxis||'x',
+        plugins:{
+          legend:{
+            display:opts.legend??false,
+            labels:{color:'#9999A8',font:{size:11,family:'Inter'},boxWidth:10,padding:12}
+          },
+          tooltip:{backgroundColor:'#1E1E24',borderColor:'#2A2A32',borderWidth:1,titleColor:'#F2F2F0',bodyColor:'#9999A8',padding:12}
+        },
+        scales: type==='doughnut' ? undefined : {
+          x:{ticks:{color:'#55556A',font:{size:11,family:'Inter'},callback:opts.xFmt||null},grid:{color:'#2A2A32'},stacked:opts.stacked||false},
+          y:{ticks:{color:'#9999A8',font:{size:11,family:'Inter'},callback:opts.yFmt||null},grid:{display:isHoriz?false:true,color:'#2A2A32'},stacked:opts.stacked||false}
         }
-      });
-      if (!res.ok) throw new Error(`Supabase error ${res.status}`);
-      return res.json();
+      }
+    });
+  }
+
+  async function init() {
+    try {
+      const meses=await sbFetch('productos',{select:'mes',cliente_id:`eq.${CONFIG.clienteId}`,order:'mes.desc',limit:1});
+      if(!meses.length) throw new Error('Sin datos disponibles para este cliente.');
+      const mes=meses[0].mes;
+      const [productos,campanas]=await Promise.all([
+        sbFetch('productos',{select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'ventas_organicas.desc'}),
+        sbFetch('campanas', {select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'coste_total.desc'}),
+      ]);
+      render(productos,campanas,mes);
+    } catch(e) {
+      document.getElementById('loadingState').innerHTML=`<p style="color:var(--negative);">${e.message}</p>`;
     }
+  }
 
-    // ── MAIN ─────────────────────────────────────────────────────────
-    async function init() {
-      try {
-        // Obtener el mes más reciente disponible para este cliente
-        const mesesProductos = await sbFetch('productos', {
-          select: 'mes',
-          cliente_id: `eq.${CONFIG.clienteId}`,
-          order: 'mes.desc',
-          limit: 1,
-        });
+  function render(productos,campanas,mes) {
+    document.getElementById('headerClientName').textContent=CONFIG.clienteNombre;
+    document.getElementById('headerPeriod').textContent=fmtMes(mes);
+    document.title=`${CONFIG.clienteNombre} — Grow Studio`;
 
-        if (!mesesProductos.length) {
-          throw new Error('Sin datos disponibles para este cliente.');
-        }
+    const ventasOrg=productos.reduce((s,p)=>s+(p.ventas_organicas||0),0);
+    const ventasPPC=productos.reduce((s,p)=>s+(p.ventas_ppc||0),0);
+    const totalVentas=ventasOrg+ventasPPC;
+    const uniOrg=productos.reduce((s,p)=>s+(p.unidades_organicas||0),0);
+    const uniPPC=productos.reduce((s,p)=>s+(p.unidades_ppc||0),0);
+    const totalUni=uniOrg+uniPPC;
+    const totalNet=productos.reduce((s,p)=>s+(p.net_profit||0),0);
+    const adsSpend=campanas.reduce((s,c)=>s+(c.coste_total||0),0);
+    const ventasPPCcamp=campanas.reduce((s,c)=>s+(c.ventas||0),0);
+    const tacos=totalVentas>0?(adsSpend/totalVentas)*100:0;
+    const roasGlobal=adsSpend>0?ventasPPCcamp/adsSpend:0;
+    const margen=totalVentas>0?(totalNet/totalVentas)*100:0;
+    const pctOrg=totalVentas>0?(ventasOrg/totalVentas)*100:0;
+    const pctPPC=100-pctOrg;
 
-        const mes = mesesProductos[0].mes;
+    document.getElementById('kpiVentas').textContent=fmtEur(totalVentas);
+    document.getElementById('kpiUnidades').textContent=fmt(totalUni);
+    document.getElementById('kpiUniSub').textContent=`${fmt(uniOrg)} org. · ${fmt(uniPPC)} PPC`;
+    document.getElementById('kpiNetProfit').textContent=fmtEur(totalNet);
+    document.getElementById('kpiNetProfit').className='kpi-value '+(totalNet>=0?'positive':'negative');
+    document.getElementById('kpiNetCard').className='kpi-card '+(totalNet>=0?'positive':'negative');
+    document.getElementById('kpiMargen').textContent=`margen ${fmt(margen,1)}%`;
+    document.getElementById('kpiTacos').textContent=`${fmt(tacos,1)}%`;
+    document.getElementById('kpiTacos').className='kpi-value '+(tacos<=15?'positive':tacos<=25?'':'negative');
+    document.getElementById('kpiTacosCard').className='kpi-card '+(tacos<=15?'positive':tacos<=25?'':'negative');
+    document.getElementById('kpiInversion').textContent=fmtEur(adsSpend);
+    document.getElementById('kpiVentasPPC').textContent=fmtEur(ventasPPCcamp);
+    document.getElementById('kpiRoas').textContent=`${fmt(roasGlobal,2)}x`;
+    document.getElementById('kpiCampanas').textContent=fmt(campanas.length);
 
-        // Fetch paralelo
-        const [productos, campanas] = await Promise.all([
-          sbFetch('productos', {
-            select: '*',
-            cliente_id: `eq.${CONFIG.clienteId}`,
-            mes: `eq.${mes}`,
-            order: 'ventas_organicas.desc',
-          }),
-          sbFetch('campanas', {
-            select: '*',
-            cliente_id: `eq.${CONFIG.clienteId}`,
-            mes: `eq.${mes}`,
-            order: 'coste_total.desc',
-          }),
-        ]);
+    document.getElementById('donutOrg').textContent=`${fmt(pctOrg,1)}%`;
+    document.getElementById('donutOrgEur').textContent=fmtEur(ventasOrg);
+    document.getElementById('donutPpc').textContent=`${fmt(pctPPC,1)}%`;
+    document.getElementById('donutPpcEur').textContent=fmtEur(ventasPPC);
+    makeChart('chartDonut','doughnut',['Orgánico','PPC'],
+      [{data:[pctOrg,pctPPC],backgroundColor:['#2ECC7A','#FF3B5C'],borderWidth:0,hoverOffset:4}],
+      {legend:false,extra:{cutout:'72%'}}
+    );
 
-        renderDashboard(productos, campanas, mes);
+    const top8=[...productos].sort((a,b)=>((b.ventas_organicas||0)+(b.ventas_ppc||0))-((a.ventas_organicas||0)+(a.ventas_ppc||0))).slice(0,8);
+    makeChart('chartProductos','bar',
+      top8.map(p=>(p.nombre||p.asin||'—').split('|')[0].trim().substring(0,28)),
+      [
+        {label:'Orgánico',data:top8.map(p=>p.ventas_organicas||0),backgroundColor:'#2ECC7A',borderRadius:3,borderSkipped:false},
+        {label:'PPC',data:top8.map(p=>p.ventas_ppc||0),backgroundColor:'#FF3B5C',borderRadius:3,borderSkipped:false},
+      ],
+      {legend:true,indexAxis:'y',stacked:true,xFmt:v=>fmtEur(v)}
+    );
 
-      } catch (err) {
-        document.getElementById('loadingState').style.display = 'none';
-        const errEl = document.getElementById('errorState');
-        errEl.style.display = 'block';
-        errEl.textContent = err.message || 'Error al cargar los datos.';
-      }
-    }
+    const carteras={};
+    campanas.forEach(c=>{
+      const k=c.cartera_nombre||'Sin cartera';
+      if(!carteras[k]) carteras[k]={inv:0,ven:0};
+      carteras[k].inv+=c.coste_total||0;
+      carteras[k].ven+=c.ventas||0;
+    });
+    const cartArr=Object.entries(carteras).sort((a,b)=>b[1].ven-a[1].ven);
 
-    function renderDashboard(productos, campanas, mes) {
-      // Header
-      document.getElementById('headerClientName').textContent = CONFIG.clienteNombre;
-      document.getElementById('headerPeriod').textContent = fmtMes(mes);
-      document.title = `${CONFIG.clienteNombre} — Reporting Grow Studio`;
+    makeChart('chartRoasCarteras','bar',
+      cartArr.map(([n])=>n.substring(0,20)),
+      [{data:cartArr.map(([,d])=>d.inv>0?+(d.ven/d.inv).toFixed(2):0),
+        backgroundColor:cartArr.map(([,d])=>{const r=d.inv>0?d.ven/d.inv:0;return r>=3?'#2ECC7A':r>=2?'#4B6EFF':'#FF3B5C';}),
+        borderRadius:4,borderSkipped:false}],
+      {yFmt:v=>`${v}x`}
+    );
 
-      // KPIs globales
-      const totalVentas     = productos.reduce((s, p) => s + (p.ventas_organicas || 0) + (p.ventas_ppc || 0), 0);
-      const totalUnidades   = productos.reduce((s, p) => s + (p.unidades_organicas || 0) + (p.unidades_ppc || 0), 0);
-      const totalNetProfit  = productos.reduce((s, p) => s + (p.net_profit || 0), 0);
-      const totalAdsSpend   = campanas.reduce((s, c) => s + (c.coste_total || 0), 0);
-      const totalVentasPPC  = campanas.reduce((s, c) => s + (c.ventas || 0), 0);
-      const tacos           = totalVentas > 0 ? (totalAdsSpend / totalVentas) * 100 : 0;
-      const roasGlobal      = totalAdsSpend > 0 ? totalVentasPPC / totalAdsSpend : 0;
-      const margin          = totalVentas > 0 ? (totalNetProfit / totalVentas) * 100 : 0;
+    makeChart('chartInvVentas','bar',
+      cartArr.map(([n])=>n.substring(0,20)),
+      [
+        {label:'Inversión',data:cartArr.map(([,d])=>d.inv),backgroundColor:'rgba(75,110,255,0.7)',borderRadius:3,borderSkipped:false},
+        {label:'Ventas PPC',data:cartArr.map(([,d])=>d.ven),backgroundColor:'rgba(46,204,122,0.7)',borderRadius:3,borderSkipped:false},
+      ],
+      {legend:true,yFmt:v=>fmtEur(v)}
+    );
 
-      document.getElementById('kpiVentas').textContent     = fmtEur(totalVentas);
-      document.getElementById('kpiUnidades').textContent   = fmt(totalUnidades);
-      document.getElementById('kpiNetProfit').textContent  = fmtEur(totalNetProfit);
-      document.getElementById('kpiNetProfit').className    = 'kpi-value ' + (totalNetProfit >= 0 ? 'positive' : 'negative');
-      document.getElementById('kpiMargin').textContent     = `margen ${fmt(margin, 1)}%`;
-      document.getElementById('kpiTacos').textContent      = `${fmt(tacos, 1)}%`;
-      document.getElementById('kpiTacos').className        = 'kpi-value ' + (tacos <= 15 ? 'positive' : tacos <= 25 ? '' : 'negative');
+    const bodyC=document.getElementById('bodyCarteras');
+    bodyC.innerHTML=cartArr.length?cartArr.map(([nombre,d])=>{
+      const roas=d.inv>0?d.ven/d.inv:0;const acos=d.ven>0?(d.inv/d.ven)*100:0;
+      return `<tr><td>${nombre}</td><td class="td-num">${fmtEur(d.inv)}</td><td class="td-num">${fmtEur(d.ven)}</td>
+        <td class="td-num"><span class="badge ${roas>=3?'badge-pos':roas>=2?'badge-neu':'badge-neg'}">${fmt(roas,2)}x</span></td>
+        <td class="td-num"><span class="badge ${acos<=20?'badge-pos':acos<=35?'badge-neu':'badge-neg'}">${fmt(acos,1)}%</span></td></tr>`;
+    }).join(''):'<tr><td colspan="5" class="no-data">Sin datos de carteras.</td></tr>';
 
-      // KPIs internos
-      document.getElementById('kpiInversion').textContent  = fmtEur(totalAdsSpend);
-      document.getElementById('kpiVentasPPC').textContent  = fmtEur(totalVentasPPC);
-      document.getElementById('kpiRoas').textContent       = `${fmt(roasGlobal, 2)}x`;
-      document.getElementById('kpiCampanas').textContent   = fmt(campanas.length);
+    const top10=[...productos].sort((a,b)=>((b.ventas_organicas||0)+(b.ventas_ppc||0))-((a.ventas_organicas||0)+(a.ventas_ppc||0))).slice(0,10);
+    const bodyP=document.getElementById('bodyProductos');
+    bodyP.innerHTML=top10.length?top10.map((p,i)=>{
+      const v=(p.ventas_organicas||0)+(p.ventas_ppc||0);const u=(p.unidades_organicas||0)+(p.unidades_ppc||0);
+      return `<tr><td style="color:var(--ink-light);font-size:12px;">${i+1}</td>
+        <td>${(p.nombre||'—').split('|')[0].trim().substring(0,55)}</td>
+        <td class="td-mono">${p.asin||'—'}</td>
+        <td class="td-num">${fmtEur(v)}</td><td class="td-num">${fmt(u)}</td>
+        <td class="td-num"><span class="badge ${(p.net_profit||0)>=0?'badge-pos':'badge-neg'}">${fmtEur(p.net_profit)}</span></td></tr>`;
+    }).join(''):'<tr><td colspan="6" class="no-data">Sin datos de productos.</td></tr>';
 
-      // Top 10 productos
-      const topProductos = [...productos]
-        .sort((a, b) => ((b.ventas_organicas || 0) + (b.ventas_ppc || 0)) - ((a.ventas_organicas || 0) + (a.ventas_ppc || 0)))
-        .slice(0, 10);
+    const top10c=campanas.slice(0,10);
+    makeChart('chartCampanas','bar',
+      top10c.map(c=>(c.campana_id||'—').substring(0,30)),
+      [
+        {label:'Inversión',data:top10c.map(c=>c.coste_total||0),backgroundColor:'rgba(75,110,255,0.8)',borderRadius:3,borderSkipped:false},
+        {label:'Ventas',data:top10c.map(c=>c.ventas||0),backgroundColor:'rgba(46,204,122,0.8)',borderRadius:3,borderSkipped:false},
+      ],
+      {legend:true,indexAxis:'y',xFmt:v=>fmtEur(v)}
+    );
 
-      const bodyP = document.getElementById('bodyProductos');
-      if (topProductos.length === 0) {
-        bodyP.innerHTML = '<tr><td colspan="6" class="no-data">Sin datos de productos para este mes.</td></tr>';
-      } else {
-        bodyP.innerHTML = topProductos.map((p, i) => {
-          const ventas = (p.ventas_organicas || 0) + (p.ventas_ppc || 0);
-          const unidades = (p.unidades_organicas || 0) + (p.unidades_ppc || 0);
-          const nombre = p.nombre ? p.nombre.split('|')[0].trim().substring(0, 60) : '—';
-          return `<tr>
-            <td style="color:var(--ink-light);font-size:12px;">${i + 1}</td>
-            <td>${nombre}</td>
-            <td style="font-family:monospace;font-size:12px;color:var(--ink-mid);">${p.asin || '—'}</td>
-            <td class="td-num">${fmtEur(ventas)}</td>
-            <td class="td-num">${fmt(unidades)}</td>
-            <td class="td-num ${p.net_profit >= 0 ? 'positive' : 'negative'}" style="color:${p.net_profit >= 0 ? 'var(--positive)' : 'var(--negative)'};">${fmtEur(p.net_profit)}</td>
-          </tr>`;
-        }).join('');
-      }
+    const bodyCA=document.getElementById('bodyCampanas');
+    bodyCA.innerHTML=campanas.length?campanas.map(c=>{
+      const roas=c.coste_total>0?c.ventas/c.coste_total:0;const acos=c.ventas>0?(c.coste_total/c.ventas)*100:0;
+      const tipo=(c.campana_id||'').substring(0,2);
+      return `<tr><td style="font-size:12px;">${(c.campana_id||'—').substring(0,45)}</td>
+        <td><span class="badge badge-neu">${tipo}</span></td>
+        <td class="td-num">${fmtEur(c.coste_total)}</td><td class="td-num">${fmtEur(c.ventas)}</td>
+        <td class="td-num"><span class="badge ${roas>=3?'badge-pos':roas>=2?'badge-neu':'badge-neg'}">${fmt(roas,2)}x</span></td>
+        <td class="td-num"><span class="badge ${acos<=20?'badge-pos':acos<=35?'badge-neu':'badge-neg'}">${fmt(acos,1)}%</span></td>
+        <td class="td-num">${fmt(c.clics)}</td></tr>`;
+    }).join(''):'<tr><td colspan="7" class="no-data">Sin datos de campañas.</td></tr>';
 
-      // Carteras
-      const carteras = {};
-      campanas.forEach(c => {
-        const key = c.cartera_nombre || 'Sin cartera';
-        if (!carteras[key]) carteras[key] = { inversion: 0, ventas: 0 };
-        carteras[key].inversion += c.coste_total || 0;
-        carteras[key].ventas    += c.ventas || 0;
-      });
+    document.getElementById('loadingState').style.display='none';
+    document.getElementById('content').style.display='block';
+  }
 
-      const bodyC = document.getElementById('bodyCarteras');
-      const carteraEntries = Object.entries(carteras).sort((a, b) => b[1].ventas - a[1].ventas);
-      if (carteraEntries.length === 0) {
-        bodyC.innerHTML = '<tr><td colspan="5" class="no-data">Sin datos de carteras para este mes.</td></tr>';
-      } else {
-        bodyC.innerHTML = carteraEntries.map(([nombre, d]) => {
-          const roas = d.inversion > 0 ? d.ventas / d.inversion : 0;
-          const acos = d.ventas > 0 ? (d.inversion / d.ventas) * 100 : 0;
-          return `<tr>
-            <td>${nombre}</td>
-            <td class="td-num">${fmtEur(d.inversion)}</td>
-            <td class="td-num">${fmtEur(d.ventas)}</td>
-            <td class="td-num">${roasBadge(roas)}</td>
-            <td class="td-num">${acosBadge(acos)}</td>
-          </tr>`;
-        }).join('');
-      }
-
-      // Campañas (vista interna)
-      const bodyCA = document.getElementById('bodyCampanas');
-      if (campanas.length === 0) {
-        bodyCA.innerHTML = '<tr><td colspan="8" class="no-data">Sin datos de campañas para este mes.</td></tr>';
-      } else {
-        bodyCA.innerHTML = campanas.map(c => {
-          const roas = c.coste_total > 0 ? c.ventas / c.coste_total : 0;
-          const acos = c.ventas > 0 ? (c.coste_total / c.ventas) * 100 : 0;
-          const tipo = (c.campana_id || '').substring(0, 2);
-          return `<tr>
-            <td style="font-size:12px;">${(c.campana_id || '—').substring(0, 50)}</td>
-            <td><span class="badge badge-neutral">${tipo}</span></td>
-            <td class="td-num">${fmtEur(c.coste_total)}</td>
-            <td class="td-num">${fmtEur(c.ventas)}</td>
-            <td class="td-num">${roasBadge(roas)}</td>
-            <td class="td-num">${acosBadge(acos)}</td>
-            <td class="td-num">${fmt(c.impresiones)}</td>
-            <td class="td-num">${fmt(c.clics)}</td>
-          </tr>`;
-        }).join('');
-      }
-
-      // Mostrar
-      document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('content').style.display = 'block';
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
