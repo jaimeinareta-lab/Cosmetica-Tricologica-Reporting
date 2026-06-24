@@ -147,10 +147,10 @@
           <div class="kpi-value" id="kpiUnidades">—</div>
           <div class="kpi-sub" id="kpiUniSub">—</div>
         </div>
-        <div class="kpi-card" id="kpiNetCard">
-          <div class="kpi-label">Beneficio neto</div>
+        <div class="kpi-card blue" id="kpiNetCard">
+          <div class="kpi-label">Inversión ADS</div>
           <div class="kpi-value" id="kpiNetProfit">—</div>
-          <div class="kpi-sub" id="kpiMargen">—</div>
+          <div class="kpi-sub" id="kpiMargen">gasto total campañas</div>
         </div>
         <div class="kpi-card" id="kpiTacosCard">
           <div class="kpi-label">TACoS</div>
@@ -216,7 +216,7 @@
       <div class="section-header"><div class="section-title">Top productos</div><div class="section-line"></div></div>
       <div class="chart-card">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Producto</th><th>ASIN</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">Beneficio neto</th></tr></thead>
+          <thead><tr><th>#</th><th>Producto</th><th>ASIN</th><th style="text-align:right;">Ventas</th><th style="text-align:right;">Unidades</th><th style="text-align:right;">PPC Gasto</th></tr></thead>
           <tbody id="bodyProductos"><tr><td colspan="6" class="no-data">Cargando...</td></tr></tbody>
         </table>
       </div>
@@ -311,8 +311,8 @@
       if(!meses.length) throw new Error('Sin datos disponibles para este cliente.');
       const mes=meses[0].mes;
       const [productos,campanas]=await Promise.all([
-        sbFetch('productos',{select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'ventas_organicas.desc'}),
-        sbFetch('campanas', {select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'coste_total.desc'}),
+        sbFetch('productos',{select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'ventas_totales.desc'}),
+        sbFetch('campanas', {select:'*',cliente_id:`eq.${CONFIG.clienteId}`,mes:`eq.${mes}`,order:'gasto.desc'}),
       ]);
       render(productos,campanas,mes);
     } catch(e) {
@@ -325,28 +325,23 @@
     document.getElementById('headerPeriod').textContent=fmtMes(mes);
     document.title=`${CONFIG.clienteNombre} — Grow Studio`;
 
-    const ventasOrg=productos.reduce((s,p)=>s+(p.ventas_organicas||0),0);
-    const ventasPPC=productos.reduce((s,p)=>s+(p.ventas_ppc||0),0);
-    const totalVentas=ventasOrg+ventasPPC;
-    const uniOrg=productos.reduce((s,p)=>s+(p.unidades_organicas||0),0);
-    const uniPPC=productos.reduce((s,p)=>s+(p.unidades_ppc||0),0);
-    const totalUni=uniOrg+uniPPC;
-    const totalNet=productos.reduce((s,p)=>s+(p.net_profit||0),0);
-    const adsSpend=campanas.reduce((s,c)=>s+(c.coste_total||0),0);
+    const ventasPPC=productos.reduce((s,p)=>s+(p.ppc_ventas||0),0);
+    const totalVentas=productos.reduce((s,p)=>s+(p.ventas_totales||0),0);
+    const ventasOrg=Math.max(0,totalVentas-ventasPPC);
+    const totalUni=productos.reduce((s,p)=>s+(p.unidades_vendidas||0),0);
+    const adsSpend=campanas.reduce((s,c)=>s+(c.gasto||0),0);
     const ventasPPCcamp=campanas.reduce((s,c)=>s+(c.ventas||0),0);
     const tacos=totalVentas>0?(adsSpend/totalVentas)*100:0;
     const roasGlobal=adsSpend>0?ventasPPCcamp/adsSpend:0;
-    const margen=totalVentas>0?(totalNet/totalVentas)*100:0;
     const pctOrg=totalVentas>0?(ventasOrg/totalVentas)*100:0;
     const pctPPC=100-pctOrg;
 
     document.getElementById('kpiVentas').textContent=fmtEur(totalVentas);
     document.getElementById('kpiUnidades').textContent=fmt(totalUni);
-    document.getElementById('kpiUniSub').textContent=`${fmt(uniOrg)} org. · ${fmt(uniPPC)} PPC`;
-    document.getElementById('kpiNetProfit').textContent=fmtEur(totalNet);
-    document.getElementById('kpiNetProfit').className='kpi-value '+(totalNet>=0?'positive':'negative');
-    document.getElementById('kpiNetCard').className='kpi-card '+(totalNet>=0?'positive':'negative');
-    document.getElementById('kpiMargen').textContent=`margen ${fmt(margen,1)}%`;
+    document.getElementById('kpiUniSub').textContent=`ventas PPC: ${fmtEur(ventasPPC)}`;
+    document.getElementById('kpiNetProfit').textContent=fmtEur(adsSpend);
+    document.getElementById('kpiNetProfit').className='kpi-value';
+    document.getElementById('kpiNetCard').className='kpi-card blue';
     document.getElementById('kpiTacos').textContent=`${fmt(tacos,1)}%`;
     document.getElementById('kpiTacos').className='kpi-value '+(tacos<=15?'positive':tacos<=25?'':'negative');
     document.getElementById('kpiTacosCard').className='kpi-card '+(tacos<=15?'positive':tacos<=25?'':'negative');
@@ -364,21 +359,21 @@
       {legend:false,extra:{cutout:'72%'}}
     );
 
-    const top8=[...productos].sort((a,b)=>((b.ventas_organicas||0)+(b.ventas_ppc||0))-((a.ventas_organicas||0)+(a.ventas_ppc||0))).slice(0,8);
+    const top8=[...productos].sort((a,b)=>(b.ventas_totales||0)-(a.ventas_totales||0)).slice(0,8);
     makeChart('chartProductos','bar',
-      top8.map(p=>(p.nombre||p.asin||'—').split('|')[0].trim().substring(0,28)),
+      top8.map(p=>(p.titulo||p.asin||'—').split('|')[0].trim().substring(0,28)),
       [
-        {label:'Orgánico',data:top8.map(p=>p.ventas_organicas||0),backgroundColor:'#2ECC7A',borderRadius:3,borderSkipped:false},
-        {label:'PPC',data:top8.map(p=>p.ventas_ppc||0),backgroundColor:'#FF3B5C',borderRadius:3,borderSkipped:false},
+        {label:'Orgánico',data:top8.map(p=>Math.max(0,(p.ventas_totales||0)-(p.ppc_ventas||0))),backgroundColor:'#2ECC7A',borderRadius:3,borderSkipped:false},
+        {label:'PPC',data:top8.map(p=>p.ppc_ventas||0),backgroundColor:'#FF3B5C',borderRadius:3,borderSkipped:false},
       ],
       {legend:true,indexAxis:'y',stacked:true,xFmt:v=>fmtEur(v)}
     );
 
     const carteras={};
     campanas.forEach(c=>{
-      const k=c.cartera_nombre||'Sin cartera';
+      const k=c.cartera_nombre||c.tipo||'Sin cartera';
       if(!carteras[k]) carteras[k]={inv:0,ven:0};
-      carteras[k].inv+=c.coste_total||0;
+      carteras[k].inv+=c.gasto||0;
       carteras[k].ven+=c.ventas||0;
     });
     const cartArr=Object.entries(carteras).sort((a,b)=>b[1].ven-a[1].ven);
@@ -408,22 +403,21 @@
         <td class="td-num"><span class="badge ${acos<=20?'badge-pos':acos<=35?'badge-neu':'badge-neg'}">${fmt(acos,1)}%</span></td></tr>`;
     }).join(''):'<tr><td colspan="5" class="no-data">Sin datos de carteras.</td></tr>';
 
-    const top10=[...productos].sort((a,b)=>((b.ventas_organicas||0)+(b.ventas_ppc||0))-((a.ventas_organicas||0)+(a.ventas_ppc||0))).slice(0,10);
+    const top10=[...productos].sort((a,b)=>(b.ventas_totales||0)-(a.ventas_totales||0)).slice(0,10);
     const bodyP=document.getElementById('bodyProductos');
     bodyP.innerHTML=top10.length?top10.map((p,i)=>{
-      const v=(p.ventas_organicas||0)+(p.ventas_ppc||0);const u=(p.unidades_organicas||0)+(p.unidades_ppc||0);
       return `<tr><td style="color:var(--ink-light);font-size:12px;">${i+1}</td>
-        <td>${(p.nombre||'—').split('|')[0].trim().substring(0,55)}</td>
+        <td>${(p.titulo||'—').split('|')[0].trim().substring(0,55)}</td>
         <td class="td-mono">${p.asin||'—'}</td>
-        <td class="td-num">${fmtEur(v)}</td><td class="td-num">${fmt(u)}</td>
-        <td class="td-num"><span class="badge ${(p.net_profit||0)>=0?'badge-pos':'badge-neg'}">${fmtEur(p.net_profit)}</span></td></tr>`;
+        <td class="td-num">${fmtEur(p.ventas_totales)}</td><td class="td-num">${fmt(p.unidades_vendidas)}</td>
+        <td class="td-num"><span class="badge badge-neu">${fmtEur(p.ppc_gasto)}</span></td></tr>`;
     }).join(''):'<tr><td colspan="6" class="no-data">Sin datos de productos.</td></tr>';
 
     const top10c=campanas.slice(0,10);
     makeChart('chartCampanas','bar',
-      top10c.map(c=>(c.campana_id||'—').substring(0,30)),
+      top10c.map(c=>(c.campana_nombre||c.campana_id||'—').substring(0,30)),
       [
-        {label:'Inversión',data:top10c.map(c=>c.coste_total||0),backgroundColor:'rgba(75,110,255,0.8)',borderRadius:3,borderSkipped:false},
+        {label:'Inversión',data:top10c.map(c=>c.gasto||0),backgroundColor:'rgba(75,110,255,0.8)',borderRadius:3,borderSkipped:false},
         {label:'Ventas',data:top10c.map(c=>c.ventas||0),backgroundColor:'rgba(46,204,122,0.8)',borderRadius:3,borderSkipped:false},
       ],
       {legend:true,indexAxis:'y',xFmt:v=>fmtEur(v)}
@@ -431,11 +425,10 @@
 
     const bodyCA=document.getElementById('bodyCampanas');
     bodyCA.innerHTML=campanas.length?campanas.map(c=>{
-      const roas=c.coste_total>0?c.ventas/c.coste_total:0;const acos=c.ventas>0?(c.coste_total/c.ventas)*100:0;
-      const tipo=(c.campana_id||'').substring(0,2);
+      const roas=c.gasto>0?c.ventas/c.gasto:0;const acos=c.ventas>0?(c.gasto/c.ventas)*100:0;
       return `<tr><td style="font-size:12px;">${(c.campana_nombre||c.campana_id||'—').substring(0,45)}</td>
-        <td><span class="badge badge-neu">${tipo}</span></td>
-        <td class="td-num">${fmtEur(c.coste_total)}</td><td class="td-num">${fmtEur(c.ventas)}</td>
+        <td><span class="badge badge-neu">${c.tipo||'—'}</span></td>
+        <td class="td-num">${fmtEur(c.gasto)}</td><td class="td-num">${fmtEur(c.ventas)}</td>
         <td class="td-num"><span class="badge ${roas>=3?'badge-pos':roas>=2?'badge-neu':'badge-neg'}">${fmt(roas,2)}x</span></td>
         <td class="td-num"><span class="badge ${acos<=20?'badge-pos':acos<=35?'badge-neu':'badge-neg'}">${fmt(acos,1)}%</span></td>
         <td class="td-num">${fmt(c.clics)}</td></tr>`;
